@@ -1,0 +1,6 @@
+.DS_Store
+.secrets.json
+
+build/
+node_modules/
+test/
