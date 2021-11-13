@@ -37,21 +37,26 @@ contract VestingSingleRevocable is VestingSingle {
      ******/
 
     /**
-     * @notice This function can stop the acquisition of tokens for the beneficiary
+     * @notice Stop the acquisition program for the beneficiary
      * (for example if an employee resigns before the end of the acquisition period).
      * The tokens already acquired remain accessible to the beneficiary with the
-     * function release(). The tokens not yet acquired are transferred to owner.
+     * function release(). The tokens not yet acquired are burn.
+     *
+     * Requirements:
+     *
+     * - the caller is the owner.
+     * - the contract is not yet revoked.
+     * - the amount of TOKEN locked is greater than 0.
      */
     function revoke() external nonReentrant onlyOwner {
         require(_revoked != true, "VestingSingleRevocable: is already revoked");
 
-        uint256 vested = getVested();
-        uint256 releasable = getReleasable();
-        uint256 excess = vested - releasable;
+        uint256 locked = getLocked();
 
-        require(excess > 0, "VestingSingleRevocable: no tokens to send");
+        require(locked > 0, "VestingSingleRevocable: no tokens to burn");
 
-        _token.safeTransfer(owner(), excess);
+        (bool success,) = address(_token).call(abi.encodeWithSignature("burn(uint256)", locked));
+        require(success);
 
         _revoked = true;
 
