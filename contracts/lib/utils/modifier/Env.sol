@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-contract Env is Ownable {
+contract Env {
     bool private _live;
 
     /**
@@ -29,7 +27,7 @@ contract Env is Ownable {
         _;
     }
 
-    function _setTolive() internal onlyDev onlyOwner {
+    function _setTolive() internal onlyDev {
         _live = true;
     }
 }
