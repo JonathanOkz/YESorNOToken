@@ -1,35 +1,43 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./release/VestingReleaseLinear.sol";
-import "./../utils/modifier/OwnableOrPermissible.sol";
 import "./../utils/modifier/Env.sol";
 
 /****************************
 * 
-* This contract block for a vesting period an amount of YON for a beneficiaries batch.
+* This contract block for a vesting period an amount of TOKEN for a beneficiaries batch.
+* The `initiator` can set the list of beneficiaries and the `activator` can activate the
+* contract (live mode) only after that the `initiator` has renounced to his role.
 * 
-* Step 1 : The owner deploy the contract and define the climf period and the duration
-* of release (by default _live is set to false => contract is in dev mode).
+* Step 1 : The caller deploy the the contract with a climf and duration period in day.
+* He define an `initiator` and `activator` account for the contratct management.
 * 
-* Step 2 : The owner add each beneficiary whith `appendBeneficiary` function. In case of
-* errors, he can call `removeBeneficiary` function (only in dev mode). He can check the
-* global correctness with `debug__getVested` and `debug__getTotalVested` before going in
-* live mode.
+* Step 2 : The `initiator` add each beneficiary whith appendBeneficiary() function. In case
+* of errors, he can call removeBeneficiary() function. He can check the global correctness
+* with debug__getVested() and debug__getTotalVested(). When it's done, he call renounceRole()
+* to freeze the beneficiaries list.
 * 
-* Step 3 : The owner transfer the right amount of YON to the contract and call `live`
-* function. Now the contract is in live mode and the vesting is starts !
+* 
+* Step 3 : The `activator` can check the global correctness with debug__getVested() and 
+* debug__getTotalVested(). If the beneficiaries list is good and the contract has
+* receiving the correct amount of TOKEN. The `activator` can call live() function.
+* 
 ******/
 
-contract VestingBatch is VestingReleaseLinear, Ownable, OwnableOrPermissible, Env, ReentrancyGuard {
+contract VestingBatch is VestingReleaseLinear, Env, ReentrancyGuard, AccessControlEnumerable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+    bytes32 public constant INITIATOR_ROLE = keccak256("INITIATOR_ROLE");
+    bytes32 public constant ACTIVATOR_ROLE = keccak256("ACTIVATOR_ROLE");
+
     event Released(address indexed beneficiary, uint256 amount);
+    event Live();
 
     struct Beneficiary {
         bool    initialized;
@@ -43,7 +51,15 @@ contract VestingBatch is VestingReleaseLinear, Ownable, OwnableOrPermissible, En
 
     IERC20 private immutable _token;
 
-    constructor (IERC20 token, uint delayInDay, uint durationInDay) VestingReleaseLinear(delayInDay, durationInDay) {
+    /**
+     * @notice
+     * Grants `INITIATOR_ROLE` to the account `initiator`.
+     * Grants `ACTIVATOR_ROLE` to the account `activator`.
+     * Define the TOKEN IERC20 interface for the vesting program.
+     */
+    constructor (IERC20 token, uint delayInDay, uint durationInDay, address initiator, address activator) VestingReleaseLinear(delayInDay, durationInDay) {
+        _setupRole(INITIATOR_ROLE, initiator);
+        _setupRole(ACTIVATOR_ROLE, activator);
         _token = token;
     }
 
@@ -120,54 +136,92 @@ contract VestingBatch is VestingReleaseLinear, Ownable, OwnableOrPermissible, En
      ******/
 
     /**
-     * @notice Transfers the available amount of YON to a beneficiary.
+     * @notice Transfers the available amount of TOKEN to the caller.
+     *
+     * Requirements:
+     *
+     * - the contact is in live mode.
+     * - the caller is in the vesting program and has any amount of TOKEN realesable.
      */
     function release() external nonReentrant onlyLive {
-        uint256 releasable = _release(msg.sender);
-        _token.safeTransfer(msg.sender, releasable);
-        require(_getTotalVested() == _token.balanceOf(address(this)), "VestingBatch: the amount of YON transferred to the beneficiary is incorrect");
-
-        emit Released(msg.sender, releasable);
+        uint256 releasable = _release(_msgSender());
+        _token.safeTransfer(_msgSender(), releasable);
+        emit Released(_msgSender(), releasable);
     }
 
 
     /****************************
-     * Owner public functions
+     * Restricted public functions
      ******/
 
     /**
-     * @notice Add beneficiary.
+     * @notice Add `beneficiary` to the vesting program for an `amount` of TOKEN.
+     *
+     * Requirements:
+     *
+     * - the contact is in dev mode.
+     * - the caller must have the `INITIATOR_ROLE`.
+     * - the `beneficiary` is not yet in the vesting program.
+     * - the `amount` is greater than 0.
      */
-    function appendBeneficiary(address beneficiary, uint256 amount) external nonReentrant onlyDev onlyOwner {
-        require(_append(beneficiary, amount), "VestingBatch: append beneficiary was failed");
+    function appendBeneficiary(address beneficiary, uint256 amount) external nonReentrant onlyDev {
+        require(hasRole(INITIATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
+        require(_append(beneficiary, amount),          "VestingBatch: append beneficiary failed");
     }
 
     /**
-     * @notice Remove beneficiary to the contract.
+     * @notice Remove `beneficiary` to the vesting program.
+     *
+     * Requirements:
+     *
+     * - the contact is in dev mode.
+     * - the caller must have the `INITIATOR_ROLE`.
+     * - the `beneficiary` is in the vesting program.
      */
-    function removeBeneficiary(address beneficiary) external nonReentrant onlyDev onlyOwner {
-        require(_remove(beneficiary), "VestingBatch: remove beneficiary was failed");
+    function removeBeneficiary(address beneficiary) external nonReentrant onlyDev {
+        require(hasRole(INITIATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
+        require(_remove(beneficiary),                  "VestingBatch: remove beneficiary failed");
     }
 
     /**
      * @notice Activate the contract for real use => live mode.
+     *
+     * Requirements:
+     *
+     * - the contact is in dev mode.
+     * - all `INITIATOR_ROLE` are revoked.
+     * - the caller must have the `ACTIVATOR_ROLE`.
+     * - the contract holds the right amount of TOKEN.
      */
-    function setTolive() external nonReentrant onlyDev onlyOwner {
-        require(_getTotalVested() == _token.balanceOf(address(this)), "VestingBatch: the amount of YON held by the contract is incorrect");
+    function setTolive() external nonReentrant onlyDev {
+        require(getRoleMemberCount(INITIATOR_ROLE) == 0,              "VestingBatch: before activate the contract all INITIATOR_ROLE must be revoked");
+        require(hasRole(ACTIVATOR_ROLE, _msgSender()),                "VestingBatch: caller is not the authorized");
+        require(_token.balanceOf(address(this)) >= _getTotalVested(), "VestingBatch: the amount of TOKEN held by the contract is incorrect");
         _setTolive();
+        emit Live();
     }
 
     /**
-     * @notice debug function for get the amount vested for a beneficiary before live mode.
+     * @notice [debug function] Get the amount vested for a beneficiary.
+     *
+     * Requirements:
+     *
+     * - the caller must have the `INITIATOR_ROLE` or `ACTIVATOR_ROLE`.
      */
-    function debug__getVested(address beneficiary) external view onlyOwner returns (uint256) {
+    function debug__getVested(address beneficiary) external view returns (uint256) {
+        require(hasRole(INITIATOR_ROLE, _msgSender()) || hasRole(ACTIVATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
         return _getVested(beneficiary);
     }
 
     /**
-     * @notice debug function for get the total amount vested before live mode.
+     * @notice [debug function] Get the total amount vested.
+     *
+     * Requirements:
+     *
+     * - the caller must have the `INITIATOR_ROLE` or `ACTIVATOR_ROLE`.
      */
-    function debug__getTotalVested() external view onlyOwner returns (uint256) {
+    function debug__getTotalVested() external view returns (uint256) {
+        require(hasRole(INITIATOR_ROLE, _msgSender()) || hasRole(ACTIVATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
         return _getTotalVested();
     }
 
