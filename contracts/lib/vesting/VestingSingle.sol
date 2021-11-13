@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -12,7 +11,7 @@ import "./release/VestingReleaseLinear.sol";
 * This contract block for a vesting period an amount of TOKEN for one beneficiary.
 ******/
 
-contract VestingSingle is VestingReleaseLinear, Ownable, ReentrancyGuard {
+contract VestingSingle is VestingReleaseLinear, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
