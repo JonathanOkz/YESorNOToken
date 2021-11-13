@@ -6,14 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./release/VestingReleaseLinear.sol";
-import "./../utils/modifier/OwnableOrPermissible.sol";
 
 /****************************
 * 
-* This contract block for a vesting period an amount of YON for one beneficiary.
+* This contract block for a vesting period an amount of TOKEN for one beneficiary.
 ******/
 
-contract VestingSingle is VestingReleaseLinear, Ownable, OwnableOrPermissible, ReentrancyGuard {
+contract VestingSingle is VestingReleaseLinear, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -44,7 +43,7 @@ contract VestingSingle is VestingReleaseLinear, Ownable, OwnableOrPermissible, R
     /**
      * @return the beneficiary address.
      */
-    function getBeneficiary() external view onlyOwnerOrPermitted(_beneficiary) returns (address) {
+    function getBeneficiary() external view returns (address) {
         return _beneficiary;
     }
 
@@ -82,8 +81,12 @@ contract VestingSingle is VestingReleaseLinear, Ownable, OwnableOrPermissible, R
 
     /**
      * @notice Transfers available amount to beneficiary.
+     *
+     * Requirements:
+     *
+     * - the amount of TOKEN releasable is greater than 0.
      */
-    function release() external nonReentrant onlyPermitted(_beneficiary) {
+    function release() external nonReentrant {
         uint256 releasable = getReleasable();
         require(releasable > 0, "VestingSingle: no tokens to release");
         _released = _released.add(releasable);
