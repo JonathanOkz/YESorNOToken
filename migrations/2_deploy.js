@@ -9,15 +9,34 @@ const YESorNOVestingBatchTeam    = artifacts.require("YESorNOVestingBatchTeam.so
 const YESorNOVestingBatchAirdrop = artifacts.require("YESorNOVestingBatchAirdrop.sol");
 
 module.exports = async function (deployer, network, accounts) {
-  const owner = accounts[0];
 
-  await deployer.deploy(YESorNOToken, owner);
+  let gnosis;
+  switch (network) {
+    case "development":
+      gnosis = accounts[0];
+      break;
+    case "rinkeby":
+      gnosis = '0x06A2582773f2A9C09812649a9f05071321E6C701';
+      break;
+    case "bsc":
+      gnosis = '0xc6710A751935E5B837BA68414b82df754502feaA';
+      break;
+    default:
+      gnosis = null;
+      break;
+  }
 
-  await deployer.deploy(YESorNOVestingBatchRound1,  YESorNOToken.address);
-  await deployer.deploy(YESorNOVestingBatchRound2,  YESorNOToken.address);
-  await deployer.deploy(YESorNOVestingBatchRound3,  YESorNOToken.address);
-  await deployer.deploy(YESorNOVestingBatchBonus,   YESorNOToken.address);
-  await deployer.deploy(YESorNOVestingBatchAdvisor, YESorNOToken.address);
-  await deployer.deploy(YESorNOVestingBatchTeam,    YESorNOToken.address);
-  await deployer.deploy(YESorNOVestingBatchAirdrop, YESorNOToken.address);
+  if (/^0x[a-fA-F0-9]{40}$/.test(gnosis) === true) {
+    // deploy token contract
+    await deployer.deploy(YESorNOToken, gnosis);
+    // deploy vesting contracts
+    await deployer.deploy(YESorNOVestingBatchRound1,  YESorNOToken.address, gnosis);
+    await deployer.deploy(YESorNOVestingBatchRound2,  YESorNOToken.address, gnosis);
+    await deployer.deploy(YESorNOVestingBatchRound3,  YESorNOToken.address, gnosis);
+    await deployer.deploy(YESorNOVestingBatchBonus,   YESorNOToken.address, gnosis);
+    await deployer.deploy(YESorNOVestingBatchAdvisor, YESorNOToken.address, gnosis);
+    await deployer.deploy(YESorNOVestingBatchTeam,    YESorNOToken.address, gnosis);
+    await deployer.deploy(YESorNOVestingBatchAirdrop, YESorNOToken.address, gnosis);  
+  }
+
 };
