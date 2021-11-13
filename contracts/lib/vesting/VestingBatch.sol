@@ -165,7 +165,7 @@ contract VestingBatch is VestingReleaseLinear, Env, ReentrancyGuard, AccessContr
      * - the `amount` is greater than 0.
      */
     function appendBeneficiary(address beneficiary, uint256 amount) external nonReentrant onlyDev {
-        require(hasRole(INITIATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
+        require(hasRole(INITIATOR_ROLE, _msgSender()), "VestingBatch: the caller is not authorized");
         require(_append(beneficiary, amount),          "VestingBatch: append beneficiary failed");
     }
 
@@ -179,7 +179,7 @@ contract VestingBatch is VestingReleaseLinear, Env, ReentrancyGuard, AccessContr
      * - the `beneficiary` is in the vesting program.
      */
     function removeBeneficiary(address beneficiary) external nonReentrant onlyDev {
-        require(hasRole(INITIATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
+        require(hasRole(INITIATOR_ROLE, _msgSender()), "VestingBatch: the caller is not authorized");
         require(_remove(beneficiary),                  "VestingBatch: remove beneficiary failed");
     }
 
@@ -195,7 +195,7 @@ contract VestingBatch is VestingReleaseLinear, Env, ReentrancyGuard, AccessContr
      */
     function setTolive() external nonReentrant onlyDev {
         require(getRoleMemberCount(INITIATOR_ROLE) == 0,              "VestingBatch: before activate the contract all INITIATOR_ROLE must be revoked");
-        require(hasRole(ACTIVATOR_ROLE, _msgSender()),                "VestingBatch: caller is not the authorized");
+        require(hasRole(ACTIVATOR_ROLE, _msgSender()),                "VestingBatch: the caller is not authorized");
         require(_token.balanceOf(address(this)) >= _getTotalVested(), "VestingBatch: the amount of TOKEN held by the contract is incorrect");
         _setTolive();
         emit Live();
@@ -209,7 +209,7 @@ contract VestingBatch is VestingReleaseLinear, Env, ReentrancyGuard, AccessContr
      * - the caller must have the `INITIATOR_ROLE` or `ACTIVATOR_ROLE`.
      */
     function debug__getVested(address beneficiary) external view returns (uint256) {
-        require(hasRole(INITIATOR_ROLE, _msgSender()) || hasRole(ACTIVATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
+        require(hasRole(INITIATOR_ROLE, _msgSender()) || hasRole(ACTIVATOR_ROLE, _msgSender()), "VestingBatch: the caller is not authorized");
         return _getVested(beneficiary);
     }
 
@@ -221,7 +221,7 @@ contract VestingBatch is VestingReleaseLinear, Env, ReentrancyGuard, AccessContr
      * - the caller must have the `INITIATOR_ROLE` or `ACTIVATOR_ROLE`.
      */
     function debug__getTotalVested() external view returns (uint256) {
-        require(hasRole(INITIATOR_ROLE, _msgSender()) || hasRole(ACTIVATOR_ROLE, _msgSender()), "VestingBatch: caller is not the authorized");
+        require(hasRole(INITIATOR_ROLE, _msgSender()) || hasRole(ACTIVATOR_ROLE, _msgSender()), "VestingBatch: the caller is not authorized");
         return _getTotalVested();
     }
 
