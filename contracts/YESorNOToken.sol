@@ -9,5 +9,5 @@ contract YESorNOToken is Token {
     string  private constant _symbol = "YON";
     uint256 private constant _cap    = 9000000000 * 10**18;
 
-    constructor(address owner) Token(owner, _name, _symbol, _cap) {}
+    constructor(address gnosis) Token(gnosis, _name, _symbol, _cap) {}
 }

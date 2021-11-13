@@ -8,5 +8,5 @@ contract YESorNOVestingBatchRound2 is VestingBatch {
     uint   private constant _delayInDay  = 180;
     uint   private constant _durationInDay  = 300;
 
-    constructor(address token) VestingBatch(IERC20(token), _delayInDay, _durationInDay) {}
+    constructor(address token, address gnosis) VestingBatch(IERC20(token), _delayInDay, _durationInDay, msg.sender, gnosis) {}
 }
