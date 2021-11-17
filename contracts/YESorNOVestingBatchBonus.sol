@@ -5,8 +5,8 @@ import "./lib/vesting/VestingBatch.sol";
 
 contract YESorNOVestingBatchBonus is VestingBatch {
 
-    uint   private constant _delayInDay  = 360;
-    uint   private constant _durationInDay  = 300;
+    uint   private constant _delayInDay  = 180;
+    uint   private constant _durationInDay  = 360;
 
     constructor(address token, address gnosis) VestingBatch(IERC20(token), _delayInDay, _durationInDay, msg.sender, gnosis) {}
 }
