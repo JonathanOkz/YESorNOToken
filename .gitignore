@@ -1,6 +1,8 @@
 .DS_Store
 .secrets.json
+.deploy
 
 build/
 node_modules/
 test/
+merged/
