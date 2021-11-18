@@ -1,6 +1,6 @@
 .DS_Store
 .secrets.json
-.deploy
+.deploy.*
 
 build/
 node_modules/
