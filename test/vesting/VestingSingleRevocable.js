@@ -142,7 +142,6 @@ contract('VestingSingleRevocable', function (accounts) {
         expect(await this.token.balanceOf(beneficiary)).to.be.bignumber.equal(getReleased1);
       });
 
-
     });
   });
 });

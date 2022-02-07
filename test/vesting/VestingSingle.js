@@ -251,9 +251,7 @@ contract('VestingSingle', function (accounts) {
 
       });
 
-
     });
-
 
   });
 });
