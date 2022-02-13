@@ -75,8 +75,9 @@ contract('StackingBatch big supply', function (accounts) {
 
       // check that all getters return the right values for beneficiary1
       expect(await this.tokenStacking.getStacked({from: beneficiary1})).to.be.bignumber.equal(small_amount);
-      expect(await this.tokenStacking.getReleasable({from: beneficiary1})).to.be.bignumber.equal(small_amount.add(new BN('10500'+decimals)));
-      expect(await this.tokenStacking.getGiftAmount({from: beneficiary1})).to.be.bignumber.equal(new BN('10500'+decimals));
+      const small_amount_rewards = small_amount.div(new BN(100)).mul(new BN(7))
+      expect(await this.tokenStacking.getReleasable({from: beneficiary1})).to.be.bignumber.equal(small_amount.add(small_amount_rewards));
+      expect(await this.tokenStacking.getGiftAmount({from: beneficiary1})).to.be.bignumber.equal(small_amount_rewards);
       expect(await this.tokenStacking.getGiftNoAds({from: beneficiary1})).equal(true);
       expect(await this.tokenStacking.getGiftExclusiveAvantage({from: beneficiary1})).equal(false);
       expect(await this.tokenStacking.exist({from: beneficiary1})).equal(true);
@@ -84,8 +85,9 @@ contract('StackingBatch big supply', function (accounts) {
 
       // check that all getters return the right values for beneficiary2
       expect(await this.tokenStacking.getStacked({from: beneficiary2})).to.be.bignumber.equal(large_amount);
-      expect(await this.tokenStacking.getReleasable({from: beneficiary2})).to.be.bignumber.equal(large_amount.add(new BN('225000'+decimals)));
-      expect(await this.tokenStacking.getGiftAmount({from: beneficiary2})).to.be.bignumber.equal(new BN('225000'+decimals));
+      const large_amount_rewards = large_amount.div(new BN(100)).mul(new BN(15));
+      expect(await this.tokenStacking.getReleasable({from: beneficiary2})).to.be.bignumber.equal(large_amount.add(large_amount_rewards));
+      expect(await this.tokenStacking.getGiftAmount({from: beneficiary2})).to.be.bignumber.equal(large_amount_rewards);
       expect(await this.tokenStacking.getGiftNoAds({from: beneficiary2})).equal(true);
       expect(await this.tokenStacking.getGiftExclusiveAvantage({from: beneficiary2})).equal(true);
       expect(await this.tokenStacking.exist({from: beneficiary2})).equal(true);
@@ -93,8 +95,9 @@ contract('StackingBatch big supply', function (accounts) {
 
       // check that all getters return the right values for beneficiary3
       expect(await this.tokenStacking.getStacked({from: beneficiary3})).to.be.bignumber.equal(medium_amount);
-      expect(await this.tokenStacking.getReleasable({from: beneficiary3})).to.be.bignumber.equal(medium_amount.add(new BN('55000'+decimals)));
-      expect(await this.tokenStacking.getGiftAmount({from: beneficiary3})).to.be.bignumber.equal(new BN('55000'+decimals));
+      const medium_amount_rewards = medium_amount.div(new BN(100)).mul(new BN(11));
+      expect(await this.tokenStacking.getReleasable({from: beneficiary3})).to.be.bignumber.equal(medium_amount.add(medium_amount_rewards));
+      expect(await this.tokenStacking.getGiftAmount({from: beneficiary3})).to.be.bignumber.equal(medium_amount_rewards);
       expect(await this.tokenStacking.getGiftNoAds({from: beneficiary3})).equal(true);
       expect(await this.tokenStacking.getGiftExclusiveAvantage({from: beneficiary3})).equal(false);
       expect(await this.tokenStacking.exist({from: beneficiary3})).equal(true);
@@ -119,12 +122,12 @@ contract('StackingBatch big supply', function (accounts) {
       await time.increaseTo( (await this.tokenStacking.getUnlockDate({from: beneficiary3})).add(time.duration.seconds(1)) );
       await this.tokenStacking.release({from: beneficiary3});
       // check that the balance of `beneficiary3` is equal to amount staked + reward
-      expect(await this.token.balanceOf(beneficiary3)).to.be.bignumber.equal(medium_amount.add(new BN('55000'+decimals)));
+      expect(await this.token.balanceOf(beneficiary3)).to.be.bignumber.equal(medium_amount.add(medium_amount_rewards));
 
       // check that all getters return the right values for beneficiary3 (after the release be done)
       expect(await this.tokenStacking.getStacked({from: beneficiary3})).to.be.bignumber.equal(medium_amount);
       expect(await this.tokenStacking.getReleasable({from: beneficiary3})).to.be.bignumber.equal(ZERO_amount);
-      expect(await this.tokenStacking.getGiftAmount({from: beneficiary3})).to.be.bignumber.equal(new BN('55000'+decimals));
+      expect(await this.tokenStacking.getGiftAmount({from: beneficiary3})).to.be.bignumber.equal(medium_amount_rewards);
       expect(await this.tokenStacking.getGiftNoAds({from: beneficiary3})).equal(true);
       expect(await this.tokenStacking.getGiftExclusiveAvantage({from: beneficiary3})).equal(false);
       expect(await this.tokenStacking.exist({from: beneficiary3})).equal(true);
@@ -132,6 +135,13 @@ contract('StackingBatch big supply', function (accounts) {
 
       // try to release twice for `beneficiary3`  
       await expectRevert( this.tokenStacking.release({from: beneficiary3}), 'StackingBatch: stacker has already released these TOKENs' )
+
+      // release for `beneficiary2` and `beneficiary1`
+      await this.tokenStacking.release({from: beneficiary2});
+      await this.tokenStacking.release({from: beneficiary1});
+
+      // check that the the total balance of the Stacking contract is equal to pool_amount less all rewards sent
+      expect(await this.token.balanceOf(this.tokenStacking.address)).to.be.bignumber.equal(pool_amount.sub(small_amount_rewards.add(medium_amount_rewards).add(large_amount_rewards)));
   });
 
 
