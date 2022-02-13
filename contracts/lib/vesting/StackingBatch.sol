@@ -220,16 +220,16 @@ contract StackingBatch is ReentrancyGuard {
     function _generateGift(uint256 amount) private view returns (Gift_t memory) {
         if (amount == SMALL) {
             // 7% rewarded
-            // No Ads for ever
+            // No Ads forever
             return Gift_t(amount.div(100).mul(7), true, false);
         } else if (amount == MEDIUM) {
             // 11% rewarded
-            // No Ads for ever
+            // No Ads forever
             return Gift_t(amount.div(100).mul(11), true, false);
         } else if (amount == LARGE) {
             // 15% rewarded
-            // No Ads for ever
-            // 1 NFT free
+            // No Ads forever
+            // 1 exclusive avantage
             return Gift_t(amount.div(100).mul(15), true, true);
         } else {
             return Gift_t(0, false, false);
