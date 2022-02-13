@@ -14,6 +14,12 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 * no longer possible. To accept new participants, it will be necessary to add
 * TOKENs to the reward pool.
 *
+* There are 3 kinds of staking available :
+* 150K TOKENs locked for 7% reward + no ads forever
+* 500K TOKENs locked for 11% reward + no ads forever
+* 1.5M TOKENs locked for 15% reward + no ads forever + 1 exclusive avantage
+* No other staking is available
+* 
 ******/
 
 contract StackingBatch is ReentrancyGuard {
@@ -46,6 +52,7 @@ contract StackingBatch is ReentrancyGuard {
     uint256 private immutable _delayInDay;
     IERC20  private immutable _token;
 
+
     /**
      * @notice
      * Define the TOKEN IERC20 and the delay in day for the stacking program.
@@ -58,7 +65,7 @@ contract StackingBatch is ReentrancyGuard {
         _delayInDay = delayInDay;
         _token = token;
     }
-    
+
 
     /****************************
      * Getters
@@ -148,7 +155,7 @@ contract StackingBatch is ReentrancyGuard {
      * - the caller must have called TOKEN.approve function before.
      */
     function increaseRewardPool(uint256 amount) external nonReentrant {
-        require(amount > 0, "StackingBatch: amount must be > 0");
+        require(amount > 0, "StackingBatch: amount must be greater than 0");
 
         _getToken().safeTransferFrom(msg.sender, address(this), amount);
         _increasePool(amount);
@@ -199,6 +206,7 @@ contract StackingBatch is ReentrancyGuard {
 
         emit Released(msg.sender, releasable);
     }
+
 
     /****************************
      * Private functions
